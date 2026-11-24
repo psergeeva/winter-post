@@ -179,7 +179,7 @@ function render(focus=false){
 
  else homePost();
  maps();
- if(focus){panel.scrollTop=0;panel.querySelector('h2')?.focus({preventScroll:true});if(view!=='map')panel.scrollIntoView({block:'nearest'});}
+ if(focus){panel.scrollTop=0;panel.querySelector('h2')?.focus({preventScroll:true});if(view!=='map'&&document.body.dataset.screen!=='letter')panel.scrollIntoView({block:'nearest'});}
 }
 const flakes=document.createDocumentFragment();
 for(let i=0;i<25;i++){
