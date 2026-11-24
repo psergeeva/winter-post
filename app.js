@@ -69,7 +69,7 @@ let selected=0,view='post',moodDay=Math.min(31,Math.max(1,available)),zoom=1.35,
 const panel=$('panel');
 const nav=[...document.querySelectorAll('[data-view]')];
 function showGame(){ $('home').hidden=true;$('game').hidden=false; }
-function begin(){state.seen=true;save();$('arrival').hidden=true;$('play').hidden=false;render(true);}
+function begin(){state.seen=true;save();$('play').hidden=false;render(true);}
 function switchView(next){view=next;message='';render(true);}
 function openLetter(day){if(!canOpen(day))return;selected=day;view='post';chosen=false;tip=false;message='';render(true);}
 function maps(){
@@ -134,12 +134,12 @@ function letterPanel(){
  const isGreen=l.type==='g';
  const choices=[l,...[-2,3].map(n=>letters[(selected-1+n+letters.length)%letters.length])];
  choices.push(...choices.splice(0,selected%3));
- panel.innerHTML=`<button class="ghost" id="back">Все письма</button><div><span class="badge" data-type="${l.type}">${l.stamp} GR · ${types[l.type]}</span></div><h2 tabindex="-1">Письмо от ${selected} декабря</h2><p class="letter-text">${escape(l.story)}</p>${original(l.type+l.stamp)}
+ panel.innerHTML=`<div class="date-envelope" role="img" aria-label="${selected} декабря"><span aria-hidden="true">${selected}</span></div><p class="letter-text">${escape(l.story)}</p>${original(l.type+l.stamp)}
  ${found?`<div class="task"><h3>${locations[l.person][0]}</h3><p>${travelTasks[selected-21]?'<strong>Задание в поездке.</strong> ':''}${escape(travelTasks[selected-21]??l.task)}</p>${tip&&l.hint?`<p><strong>Подсказка.</strong> ${escape(l.hint)}</p>`:''}${l.person==='knight'&&!done?puzzleShield():''}${!isGreen&&!done?`<details ${state.notes[selected]?'open':''}><summary>Записать свою идею</summary><label for="note">Заметка к письму</label><textarea id="note">${escape(state.notes[selected])}</textarea></details>`:''}</div>`:'<p>Кто написал письмо? Найди персонажа на карте.</p>'}
  ${tip&&!found?`<p><strong>Подсказка.</strong> ${escape(locations[l.person][3])}</p>`:''}
  ${done?`<p class="skin">${giftSticker(l)}</p><p>Подарок доставлен.</p>`:found?chosen?`<p>В посылке ${l.icon} ${l.gift.toLowerCase()}. Нажми на персонажа ещё раз, чтобы вручить подарок.</p><button id="deliver" class="delivery-shortcut">Вручить подарок</button>`:`<h3>Что положить в посылку?</h3><div class="row rack">${choices.map(v=>`<button class="choice" data-gift="${v.person}">${giftSticker(v)}${v.gift}</button>`).join('')}</div>`:''}
  <div class="row">${!found?'<button id="find">Искать на карте</button>':''}${!done&&(!found||isGreen)?'<button class="ghost" id="hint">Подсказка</button>':''}</div>${status()}`;
- $('back').onclick=()=>openLetter(0);
+
  if($('find'))$('find').onclick=()=>{view='map';render();$('mapframe').focus();$('mapSide').scrollIntoView({block:'nearest'});};
  if($('hint'))$('hint').onclick=()=>{tip=!tip;render();if(tip&&!found){view='map';render();mapFocus();$('mapSide').scrollIntoView({block:'nearest'});}};
  if($('deliver'))$('deliver').onclick=deliver;
@@ -155,9 +155,9 @@ function finale(){
  const complete=state.done[31],values=state.finalValues??[];
  const solution=finalClues.map(c=>c[1]).join('');
  const ready=finalClues.every((c,i)=>normalized(values[i]??'')===c[1]);
- panel.innerHTML=`<button class="ghost" id="back">Все письма</button><div><span class="badge">✦ Две марки ✦</span></div><h2 tabindex="-1">Письмо на Новый год</h2>${original('final','Новогоднее письмо')}
+ panel.innerHTML=`<div class="date-envelope" role="img" aria-label="${selected} декабря"><span aria-hidden="true">${selected}</span></div>${original('final','Новогоднее письмо')}
  ${complete?'<h3>Секрет открыт!</h3><p>Проверь сахарницу или упаковку сахара. Вдруг дома тебя ждёт записка?</p>':ready?`<p>Прочитай третий столбец сверху вниз.</p><div class="grid" aria-label="Сетка со словами">${[...solution].map(c=>`<span>${c.toUpperCase()}</span>`).join('')}</div><form id="secret"><label for="secretWord">Секретное слово</label><input id="secretWord" type="text" autocomplete="off" required><div class="row"><button>Проверить слово</button></div></form>`:`<form id="riddles">${finalClues.map(([question],i)=>`<label for="clue${i}">${i+1}. ${question}</label><input type="text" id="clue${i}" value="${escape(values[i])}" autocomplete="off">`).join('')}<div class="row"><button>Проверить ответы</button></div></form>`}${status()}`;
- $('back').onclick=()=>openLetter(0);
+
  if($('riddles')){
    $('riddles').oninput=()=>{state.finalValues=finalClues.map((_,i)=>$('clue'+i).value);save();};
    $('riddles').onsubmit=e=>{e.preventDefault();state.finalValues=finalClues.map((_,i)=>$('clue'+i).value);const wrong=finalClues.flatMap((c,i)=>normalized(state.finalValues[i])===c[1]?[]:[i+1]);message=wrong.length?'Проверь ответы '+wrong.join(', ')+'.':'';save();render();};
@@ -174,24 +174,38 @@ function deliveryPanel(){
  $('returnPost').onclick=()=>openLetter(0);
 }
 function render(focus=false){
- $('mapSide').hidden=view==='mood';$('play').classList.toggle('map-first',view==='map');
+ const mapOpen=view==='map';
+ $('mapSide').hidden=!mapOpen;panel.hidden=mapOpen;
+ $('mapStatus').textContent=mapOpen?(message||(tip&&letters[selected-1]?'Подсказка. '+locations[letters[selected-1].person][3]:selected&&selected<31?'Найди того, кто написал письмо.':'Нажми на персонажа, чтобы узнать его имя.')):'';
  nav.forEach(b=>b.setAttribute('aria-current',b.dataset.view===view));
+ if(mapOpen){maps();return;}
  if(view==='delivery')deliveryPanel();
  else if(selected===31)finale();
  else if(selected)letterPanel();
- else if(view==='map')panel.innerHTML=`<h2 tabindex="-1">Сказочное королевство</h2><p>На карте видно, кто уже получил подарки. Нажми на персонажа, чтобы узнать его имя.</p>${status()}`;
+
  else homePost();
  maps();
  if(focus){panel.scrollTop=0;panel.querySelector('h2')?.focus({preventScroll:true});if(view!=='map')panel.scrollIntoView({block:'nearest'});}
 }
+if(typeof speechSynthesis!=='undefined'&&typeof SpeechSynthesisUtterance!=='undefined'){
+ $('readIntro').hidden=false;
+ $('readIntro').onclick=()=>{
+  speechSynthesis.cancel();
+  const words=new SpeechSynthesisUtterance($('elf-story').textContent);
+  words.lang='ru-RU';
+  words.rate=.9;
+  speechSynthesis.speak(words);
+ };
+}
 function enterCity(){
+ if(typeof speechSynthesis!=='undefined')speechSynthesis.cancel();
  if ($('enter').disabled) return;
  $('enter').disabled=true;$('portal').classList.add('dive');
- setTimeout(()=>{showGame();if(state.seen)begin();else{$('arrival').hidden=false;$('arrival').querySelector('h2').focus();}},matchMedia('(prefers-reduced-motion: reduce)').matches?25:3360);
+ setTimeout(()=>{showGame();begin();},matchMedia('(prefers-reduced-motion: reduce)').matches?25:3360);
 }
 $('enter').onclick=enterCity;
 $('portalEntry').onclick=enterCity;
-$('start').onclick=begin;
+
 nav.forEach(b=>b.onclick=()=>{if($('play').hidden)begin(); if(b.dataset.view==='post'){openLetter(0);return;}switchView(b.dataset.view);});
 $('zoomIn').onclick=()=>zoomMap(.25);$('zoomOut').onclick=()=>zoomMap(-.25);
 
