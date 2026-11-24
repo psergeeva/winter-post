@@ -68,6 +68,27 @@ const finalClues=[['Что украшает крышу одинокой башн
 let selected=0,view='post',moodDay=Math.min(31,Math.max(1,available)),chosen=false,tip=false,message='',shieldColor='#a93336',shieldIcon='★';
 const panel=$('panel');
 const nav=[...document.querySelectorAll('[data-view]')];
+function recordRoute(){
+ const route={winterPost:true,view,day:selected,chosen,tip};
+ const current=history.state;
+ if(current?.winterPost&&current.view===view&&current.day===selected)history.replaceState(route,'');
+ else history.pushState(route,'');
+}
+history.replaceState({winterPost:true,view:'home',day:0},'');
+window.addEventListener('popstate',event=>{
+ const route=event.state;
+ if(!route?.winterPost||route.view==='home'){
+  $('home').hidden=false;$('game').hidden=true;
+  $('portal').classList.remove('dive');$('enter').disabled=false;
+  delete document.body.dataset.screen;
+  selected=0;view='post';chosen=false;tip=false;message='';
+  return;
+ }
+ showGame();$('play').hidden=false;
+ selected=canOpen(route.day)?route.day:0;
+ view=route.view;chosen=!!route.chosen&&!state.done[selected];tip=!!route.tip;message='';
+ render(true,false);
+});
 function showGame(){ $('home').hidden=true;$('game').hidden=false; }
 function begin(){state.seen=true;save();$('play').hidden=false;render(true);}
 function switchView(next){view=next;message='';render(true);}
@@ -93,7 +114,7 @@ function maps(){
 function tap(person){
  const l=letters[selected-1];
  if(!l||selected===31||view==='mood'){message='Здесь живёт '+locations[person][0].toLowerCase()+'.';render();return;}
- if(l.person!==person){message='Похоже, письмо написал кто-то другой. Можно перечитать его или взять подсказку.';render();return;}
+ if(l.person!==person){message='Это '+locations[person][0]+'. Письмо написал кто-то другой. Попробуй ещё!';render();return;}
  if(chosen){deliver();return;}
  state.found[selected]=true;tip=false;message='Отправитель найден!';view='post';save();render(true);
 }
@@ -133,8 +154,8 @@ function letterPanel(){
  ${done?`<p class="skin">${giftSticker(l)}</p><p>Подарок доставлен.</p>`:found?chosen?`<p>В посылке ${l.icon} ${l.gift.toLowerCase()}. Нажми на персонажа ещё раз, чтобы вручить подарок.</p><button id="deliver" class="delivery-shortcut">Вручить подарок</button>`:`<h3>Что положить в посылку?</h3><div class="row rack">${choices.map(v=>`<button class="choice" data-gift="${v.person}">${giftSticker(v)}${v.gift}</button>`).join('')}</div>`:''}
  <div class="row">${!found?'<button id="find">Искать на карте</button>':''}${!done&&(!found||isGreen)?'<button class="ghost" id="hint">Подсказка</button>':''}</div>${status()}`;
 
- if($('find'))$('find').onclick=()=>{view='map';render();$('mapframe').focus();$('mapSide').scrollIntoView({block:'nearest'});};
- if($('hint'))$('hint').onclick=()=>{tip=!tip;render();if(tip&&!found){view='map';render();mapFocus();$('mapSide').scrollIntoView({block:'nearest'});}};
+ if($('find'))$('find').onclick=()=>{switchView('map');$('mapframe').focus({preventScroll:true});};
+ if($('hint'))$('hint').onclick=()=>{tip=!tip;if(tip&&!found){view='map';message='';render();mapFocus();}else render();};
  if($('deliver'))$('deliver').onclick=deliver;
  if($('note'))$('note').oninput=e=>{state.notes[selected]=e.target.value;save();};
  panel.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{shieldColor=b.dataset.color;render();});
@@ -157,19 +178,25 @@ function finale(){
  }
  if($('secret'))$('secret').onsubmit=e=>{
   e.preventDefault();
-  if(normalized($('secretWord').value)==='сахар'){state.done[31]=true;message='';save();}
+  if(normalized($('secretWord').value)==='сахар'){state.done[31]=true;message='Ты большая молодец! Возьми свой подарочек.';save();}
   else message='Посмотри на выделенный столбец и прочитай буквы сверху вниз.';
   render();
  };
 }
 function deliveryPanel(){
- panel.innerHTML='<h2 tabindex="-1">Посылка доставлена!</h2><p class="skin">'+giftSticker(letters[selected-1])+'</p><p>Наклейка уже на карте.</p><button id="returnPost">В почтовый ящик</button>';
+ const praise=['Ты большая молодец! Возьми свой подарочек.','Отличная работа, почтальон! Теперь твоя очередь получить подарочек.','Сегодняшнее задание выполнено! Забирай свой подарочек.','Ура, ты справилась! Тебя ждёт подарочек.'];
+ panel.innerHTML='<h2 tabindex="-1">Посылка доставлена!</h2><p class="skin">'+giftSticker(letters[selected-1])+'</p><p>'+praise[(selected-1)%praise.length]+'</p><button id="returnPost">В почтовый ящик</button>';
  $('returnPost').onclick=()=>openLetter(0);
 }
-function render(focus=false){
+function render(focus=false,record=true){
+ const previousScreen=document.body.dataset.screen;
+ const scroll=panel.scrollTop;
+ const expanded=!focus&&!!panel.querySelector('.original[open]');
+ if(record)recordRoute();
  const mapOpen=view==='map';
  document.body.dataset.screen=mapOpen?'map':selected&&view!=='delivery'?'letter':'post';
  $('mapSide').hidden=!mapOpen;panel.hidden=mapOpen;
+ $('mapStatus').classList.toggle('shown',mapOpen&&!!message);
  $('mapStatus').textContent=mapOpen?(message||(tip&&letters[selected-1]?'Подсказка. '+locations[letters[selected-1].person][3]:selected&&selected<31?'Найди того, кто написал письмо.':'Нажми на персонажа, чтобы узнать его имя.')):'';
  nav.forEach(b=>b.setAttribute('aria-current',b.dataset.view===view));
  if(mapOpen){maps();return;}
@@ -179,7 +206,10 @@ function render(focus=false){
 
  else homePost();
  maps();
- if(focus){panel.scrollTop=0;panel.querySelector('h2')?.focus({preventScroll:true});if(view!=='map'&&document.body.dataset.screen!=='letter')panel.scrollIntoView({block:'nearest'});}
+ if(expanded&&previousScreen==='letter'&&document.body.dataset.screen==='letter'){const scan=panel.querySelector('.original');if(scan)scan.open=true;}
+ panel.scrollTop=focus?0:scroll;
+ if(focus&&document.body.dataset.screen==='letter')panel.focus({preventScroll:true});
+ else if(focus)panel.querySelector('h2')?.focus({preventScroll:true});
 }
 const flakes=document.createDocumentFragment();
 for(let i=0;i<25;i++){
@@ -228,27 +258,58 @@ $('portalEntry').onclick=enterCity;
 nav.forEach(b=>b.onclick=()=>{if($('play').hidden)begin(); if(b.dataset.view==='post'){openLetter(0);return;}switchView(b.dataset.view);});
 
 
-const frame=$('mapframe');
-let drag=null, moved=false;
+const frame=$('mapframe'), map=$('map'), wrap=document.querySelector('.wrap');
+const fingers=new Map();
+let gesture=null,moved=false,zoom=1.35;
+function mapPosition(event){
+ const r=frame.getBoundingClientRect();
+ return getComputedStyle(wrap).transform==='none'?[event.clientX-r.left,event.clientY-r.top]:[event.clientY-r.top,r.right-event.clientX];
+}
+function pinchGeometry(){
+ const [a,b]=fingers.values();
+ return {x:(a[0]+b[0])/2,y:(a[1]+b[1])/2,d:Math.max(1,Math.hypot(a[0]-b[0],a[1]-b[1]))};
+}
+function startPan(point){
+ gesture={x:point[0],y:point[1],left:frame.scrollLeft,top:frame.scrollTop};
+}
 frame.addEventListener('pointerdown',e=>{
- if(!e.isPrimary||e.button!==0)return;
- moved=false;
- drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:frame.scrollLeft,top:frame.scrollTop};
+ if(e.button!==0||fingers.size>=2)return;
+ const p=mapPosition(e);
+ if(!fingers.size){moved=false;startPan(p);}
+ fingers.set(e.pointerId,p);
+ if(fingers.size!==2)return;
+ const g=pinchGeometry();
+ gesture={...g,zoom,fx:(frame.scrollLeft+g.x)/map.offsetWidth,fy:(frame.scrollTop+g.y)/map.offsetHeight};
+ moved=true;
+ for(const id of fingers.keys())frame.setPointerCapture(id);
 });
 frame.addEventListener('pointermove',e=>{
- if(drag?.id!==e.pointerId)return;
- const x=e.clientX-drag.x,y=e.clientY-drag.y;
- const rotated=getComputedStyle(document.querySelector('.wrap')).transform!=='none';
- const dx=rotated?y:x,dy=rotated?-x:y;
+ if(!fingers.has(e.pointerId)||!gesture)return;
+ const p=mapPosition(e);
+ fingers.set(e.pointerId,p);
+ if(fingers.size===2){
+  const g=pinchGeometry();
+  zoom=Math.max(.75,Math.min(3.2,gesture.zoom*g.d/gesture.d));
+  map.style.setProperty('--map-zoom',zoom*100+'%');
+  frame.scrollLeft=gesture.fx*map.offsetWidth-g.x;
+  frame.scrollTop=gesture.fy*map.offsetHeight-g.y;
+  return;
+ }
+ const dx=p[0]-gesture.x,dy=p[1]-gesture.y;
  if(!moved&&Math.hypot(dx,dy)<7)return;
- if(!moved){moved=true;frame.setPointerCapture(e.pointerId);}
- frame.scrollLeft=drag.left-dx;frame.scrollTop=drag.top-dy;
+ moved=true;
+ if(!frame.hasPointerCapture(e.pointerId))frame.setPointerCapture(e.pointerId);
+ frame.scrollLeft=gesture.left-dx;frame.scrollTop=gesture.top-dy;
 });
-function stopDrag(e){if(drag?.id===e.pointerId)drag=null;}
-frame.addEventListener('pointerup',stopDrag);
-frame.addEventListener('pointercancel',stopDrag);
+function stopGesture(e){
+ if(!fingers.delete(e.pointerId))return;
+ if(fingers.size)startPan(fingers.values().next().value);
+ else gesture=null;
+}
+frame.addEventListener('pointerup',stopGesture);
+frame.addEventListener('pointercancel',stopGesture);
+frame.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&!moved)stopGesture(e);});
 frame.addEventListener('click',e=>{if(moved&&e.detail){e.stopImmediatePropagation();e.preventDefault();}moved=false;},true);
-
 })();
 })().catch(err=>{
  console.error(err);
