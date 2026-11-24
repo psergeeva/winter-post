@@ -14,7 +14,7 @@
  
 const travelTasks=["Назови три вещи, которым нужны батарейки. Какую из них Ведьма взяла бы с собой в тёмный лес?","Покажи руками, как прыгает лягушка, и придумай для неё реплику. Сыграй мини-спектакль.","Придумай указатель для места, где ты сейчас. Что на нём написано и куда он ведёт?","Вспомни три вещи, которые качаются. Придумай, как устроить качели для друзей Медведя.","Придумай для Волка салат из трёх овощей разных цветов и дай ему название.","Придумай три узора для шарфа Пастуха по тому, что видишь в поездке. Опиши их или нарисуй на телефоне."];
 function original(key,label='Оригинал письма'){
- return '<details class="original"><summary>'+label+'</summary>'+originalPages[key].map((src,i)=>'<img src="'+src+'" alt="'+label+', страница '+(i+1)+'">').join('')+'</details>';
+ return '<details class="original"><summary><span class="original-icon" aria-hidden="true">✉</span> '+label+'</summary>'+originalPages[key].map((src,i)=>'<img src="'+src+'" alt="'+label+', страница '+(i+1)+'">').join('')+'</details>';
 }
 function reward(count){
  const names=['✦ Значок почтальона','❄ Снежный фонарь','🎄 Ёлочная звезда','✉ Золотой конверт','🧭 Волшебный компас','🏅 Медаль зимней почты'];
@@ -122,7 +122,7 @@ function homePost(){
  panel.innerHTML=`<div class="eyebrow">Почтовое отделение</div><h2 tabindex="-1">Почтовый ящик</h2><p>До Нового года ${daysToNewYear} дн. · Доставлено ${done} из 30</p><div class="letters">${Array.from({length:31},(_,i)=>{
    const day=i+1,l=letters[i],open=canOpen(day);
    return `<button class="letter-tile" data-day="${day}" data-type="${l?.type??'w'}" aria-label="${day} декабря${state.done[day]?', пройдено':open?'':', закрыто'}" ${open?'':'disabled'}>${day}<br>${state.done[day]?'✓':open?'✉':'🔒'}</button>`;
- }).join('')}</div><p class="muted">${testing?'Тестовый режим. Все письма открыты.':'Письма открываются по дням декабря, по времени Софии.'}</p>${reward(done)}<details><summary>Предисловие</summary>${original('intro','Предисловие')}</details>`;
+ }).join('')}</div><p class="muted">${testing?'Тестовый режим. Все письма открыты.':'Письма открываются по дням декабря, по времени Софии.'}</p>${reward(done)}<details><summary>Предисловие и авторы</summary><p class="muted">Карта — Ксения Ефимова, «Праздник в коробке». Семейная адаптация по мотивам «Невероятного почтальона» Юлии Луговской и Анны Бабушкиной.</p>${original('intro','Предисловие')}</details>`;
  panel.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>openLetter(Number(b.dataset.day)));
 
 }
@@ -134,7 +134,7 @@ function letterPanel(){
  const isGreen=l.type==='g';
  const choices=[l,...[-2,3].map(n=>letters[(selected-1+n+letters.length)%letters.length])];
  choices.push(...choices.splice(0,selected%3));
- panel.innerHTML=`<div class="date-envelope" role="img" aria-label="${selected} декабря"><span aria-hidden="true">${selected}</span></div><p class="letter-text">${escape(l.story)}</p>${original(l.type+l.stamp)}
+ panel.innerHTML=`<div class="date-envelope" role="img" aria-label="${selected} декабря"><svg viewBox="0 0 86 56" aria-hidden="true" focusable="false"><rect x="2" y="2" width="82" height="52" rx="7" fill="#b33743" stroke="#ffe6a5" stroke-width="2"/><path d="M4 50L42 24 82 50" fill="none" stroke="#e98578" stroke-width="2"/><path d="M4 6L39 35Q43 39 47 35L82 6" fill="#205742" stroke="#ffda80" stroke-width="2" stroke-linejoin="round"/><circle cx="43" cy="35" r="13" fill="#ffe29b" stroke="#9d472e" stroke-width="1.5"/></svg><span aria-hidden="true">${selected}</span></div><p class="letter-text">${escape(l.story)}</p>${original(l.type+l.stamp)}
  ${found?`<div class="task"><h3>${locations[l.person][0]}</h3><p>${travelTasks[selected-21]?'<strong>Задание в поездке.</strong> ':''}${escape(travelTasks[selected-21]??l.task)}</p>${tip&&l.hint?`<p><strong>Подсказка.</strong> ${escape(l.hint)}</p>`:''}${l.person==='knight'&&!done?puzzleShield():''}${!isGreen&&!done?`<details ${state.notes[selected]?'open':''}><summary>Записать свою идею</summary><label for="note">Заметка к письму</label><textarea id="note">${escape(state.notes[selected])}</textarea></details>`:''}</div>`:'<p>Кто написал письмо? Найди персонажа на карте.</p>'}
  ${tip&&!found?`<p><strong>Подсказка.</strong> ${escape(locations[l.person][3])}</p>`:''}
  ${done?`<p class="skin">${giftSticker(l)}</p><p>Подарок доставлен.</p>`:found?chosen?`<p>В посылке ${l.icon} ${l.gift.toLowerCase()}. Нажми на персонажа ещё раз, чтобы вручить подарок.</p><button id="deliver" class="delivery-shortcut">Вручить подарок</button>`:`<h3>Что положить в посылку?</h3><div class="row rack">${choices.map(v=>`<button class="choice" data-gift="${v.person}">${giftSticker(v)}${v.gift}</button>`).join('')}</div>`:''}
@@ -155,7 +155,7 @@ function finale(){
  const complete=state.done[31],values=state.finalValues??[];
  const solution=finalClues.map(c=>c[1]).join('');
  const ready=finalClues.every((c,i)=>normalized(values[i]??'')===c[1]);
- panel.innerHTML=`<div class="date-envelope" role="img" aria-label="${selected} декабря"><span aria-hidden="true">${selected}</span></div>${original('final','Новогоднее письмо')}
+ panel.innerHTML=`<div class="date-envelope" role="img" aria-label="${selected} декабря"><svg viewBox="0 0 86 56" aria-hidden="true" focusable="false"><rect x="2" y="2" width="82" height="52" rx="7" fill="#b33743" stroke="#ffe6a5" stroke-width="2"/><path d="M4 50L42 24 82 50" fill="none" stroke="#e98578" stroke-width="2"/><path d="M4 6L39 35Q43 39 47 35L82 6" fill="#205742" stroke="#ffda80" stroke-width="2" stroke-linejoin="round"/><circle cx="43" cy="35" r="13" fill="#ffe29b" stroke="#9d472e" stroke-width="1.5"/></svg><span aria-hidden="true">${selected}</span></div>${original('final','Новогоднее письмо')}
  ${complete?'<h3>Секрет открыт!</h3><p>Проверь сахарницу или упаковку сахара. Вдруг дома тебя ждёт записка?</p>':ready?`<p>Прочитай третий столбец сверху вниз.</p><div class="grid" aria-label="Сетка со словами">${[...solution].map(c=>`<span>${c.toUpperCase()}</span>`).join('')}</div><form id="secret"><label for="secretWord">Секретное слово</label><input id="secretWord" type="text" autocomplete="off" required><div class="row"><button>Проверить слово</button></div></form>`:`<form id="riddles">${finalClues.map(([question],i)=>`<label for="clue${i}">${i+1}. ${question}</label><input type="text" id="clue${i}" value="${escape(values[i])}" autocomplete="off">`).join('')}<div class="row"><button>Проверить ответы</button></div></form>`}${status()}`;
 
  if($('riddles')){
