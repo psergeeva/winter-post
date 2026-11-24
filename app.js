@@ -189,7 +189,34 @@ for(let i=0;i<25;i++){
  flakes.append(flake);
 }
 document.querySelector('.snow').append(flakes);
+const introAudio=new Audio('elf-intro.wav');
+introAudio.preload='none';
+const readIntro=$('readIntro');
+const introStatus=document.createElement('p');
+introStatus.setAttribute('role','status');
+readIntro.parentElement.after(introStatus);
+readIntro.hidden=false;
+function resetIntroLabel(){readIntro.textContent='Послушать эльфа';}
+function stopIntro(){
+ introAudio.pause();
+ introAudio.currentTime=0;
+ resetIntroLabel();
+}
+introAudio.addEventListener('ended',resetIntroLabel);
+readIntro.onclick=async()=>{
+ introStatus.textContent='';
+ if(!introAudio.paused){stopIntro();return;}
+ try{
+  await introAudio.play();
+  if(!introAudio.paused)readIntro.textContent='Остановить озвучку';
+ }catch{
+  resetIntroLabel();
+  introStatus.textContent='Озвучка не загрузилась. Попробуй ещё раз.';
+ }
+};
+
 function enterCity(){
+ stopIntro();
 
  if ($('enter').disabled) return;
  $('enter').disabled=true;$('portal').classList.add('dive');
