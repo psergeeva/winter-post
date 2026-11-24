@@ -65,7 +65,7 @@ const canOpen=day=>day===0||testing||day<=availableToday();
 const daysToNewYear=Math.max(0,Math.round((Date.UTC(2027,0,1)-Date.UTC(date.year,date.month-1,date.day))/86400000));
 const moods=[['😊','Радостно'],['😌','Спокойно'],['😟','Тревожно'],['😢','Грустно'],['😠','Сердито'],['😴','Устала']];
 const finalClues=[['Что украшает крышу одинокой башни?','месяц'],['Кто жуёт траву на холме?','овца'],['Что общего у бургомистра и директора театра?','усы'],['Какой красный гриб растёт в лесу?','мухомор'],['Что охраняет пугало?','капуста'],['Кто плавает в море? Их шестеро.','рыбы']];
-let selected=0,view='post',moodDay=Math.min(31,Math.max(1,available)),zoom=1.35,chosen=false,tip=false,message='',shieldColor='#a93336',shieldIcon='★';
+let selected=0,view='post',moodDay=Math.min(31,Math.max(1,available)),chosen=false,tip=false,message='',shieldColor='#a93336',shieldIcon='★';
 const panel=$('panel');
 const nav=[...document.querySelectorAll('[data-view]')];
 function showGame(){ $('home').hidden=true;$('game').hidden=false; }
@@ -101,13 +101,6 @@ function deliver(){
  const l=letters[selected-1];
  if(!l||!chosen||!state.found[selected]||!canOpen(selected))return;
  state.done[selected]=true;save();chosen=false;view='delivery';render(true);
-}
-function zoomMap(factor){
- const frame=$('mapframe'), map=$('map');
- const oldWidth=map.offsetWidth,oldHeight=map.offsetHeight;
- const x=(frame.scrollLeft+frame.clientWidth/2)/oldWidth,y=(frame.scrollTop+frame.clientHeight/2)/oldHeight;
- zoom=Math.max(1,Math.min(2.5,zoom+factor));map.style.setProperty('--map-zoom',zoom*100+'%');
- frame.scrollLeft=x*map.offsetWidth-frame.clientWidth/2;frame.scrollTop=y*map.offsetHeight-frame.clientHeight/2;
 }
 function mapFocus(){
  const point=locations[letters[selected-1]?.person];
@@ -175,6 +168,7 @@ function deliveryPanel(){
 }
 function render(focus=false){
  const mapOpen=view==='map';
+ document.body.dataset.screen=mapOpen?'map':selected&&view!=='delivery'?'letter':'post';
  $('mapSide').hidden=!mapOpen;panel.hidden=mapOpen;
  $('mapStatus').textContent=mapOpen?(message||(tip&&letters[selected-1]?'Подсказка. '+locations[letters[selected-1].person][3]:selected&&selected<31?'Найди того, кто написал письмо.':'Нажми на персонажа, чтобы узнать его имя.')):'';
  nav.forEach(b=>b.setAttribute('aria-current',b.dataset.view===view));
@@ -187,33 +181,16 @@ function render(focus=false){
  maps();
  if(focus){panel.scrollTop=0;panel.querySelector('h2')?.focus({preventScroll:true});if(view!=='map')panel.scrollIntoView({block:'nearest'});}
 }
-const introAudio=new Audio('elf-intro.wav');
-introAudio.preload='none';
-const readIntro=$('readIntro');
-const introStatus=document.createElement('p');
-introStatus.setAttribute('role','status');
-readIntro.parentElement.after(introStatus);
-readIntro.hidden=false;
-function resetIntroLabel(){readIntro.textContent='Послушать эльфа';}
-function stopIntro(){
- introAudio.pause();
- introAudio.currentTime=0;
- resetIntroLabel();
+const flakes=document.createDocumentFragment();
+for(let i=0;i<25;i++){
+ const flake=document.createElement('i');
+ flake.textContent=i%3===0?'❄':'•';
+ flake.style.cssText='--x:'+(i*41%100)+'%;--size:'+(8+i*7%14)+'px;--time:'+(7+i%7)+'s;--delay:-'+(i*1.37)+'s;--drift:'+(i%2?44:-37)+'px';
+ flakes.append(flake);
 }
-introAudio.addEventListener('ended',resetIntroLabel);
-readIntro.onclick=async()=>{
- introStatus.textContent='';
- if(!introAudio.paused){stopIntro();return;}
- try{
-  await introAudio.play();
-  if(!introAudio.paused)readIntro.textContent='Остановить озвучку';
- }catch{
-  resetIntroLabel();
-  introStatus.textContent='Озвучка не загрузилась. Попробуй ещё раз.';
- }
-};
+document.querySelector('.snow').append(flakes);
 function enterCity(){
- stopIntro();
+
  if ($('enter').disabled) return;
  $('enter').disabled=true;$('portal').classList.add('dive');
  setTimeout(()=>{showGame();begin();},matchMedia('(prefers-reduced-motion: reduce)').matches?25:3360);
@@ -222,7 +199,7 @@ $('enter').onclick=enterCity;
 $('portalEntry').onclick=enterCity;
 
 nav.forEach(b=>b.onclick=()=>{if($('play').hidden)begin(); if(b.dataset.view==='post'){openLetter(0);return;}switchView(b.dataset.view);});
-$('zoomIn').onclick=()=>zoomMap(.25);$('zoomOut').onclick=()=>zoomMap(-.25);
+
 
 const frame=$('mapframe');
 let drag=null, moved=false;
@@ -233,7 +210,9 @@ frame.addEventListener('pointerdown',e=>{
 });
 frame.addEventListener('pointermove',e=>{
  if(drag?.id!==e.pointerId)return;
- const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+ const x=e.clientX-drag.x,y=e.clientY-drag.y;
+ const rotated=getComputedStyle(document.querySelector('.wrap')).transform!=='none';
+ const dx=rotated?y:x,dy=rotated?-x:y;
  if(!moved&&Math.hypot(dx,dy)<7)return;
  if(!moved){moved=true;frame.setPointerCapture(e.pointerId);}
  frame.scrollLeft=drag.left-dx;frame.scrollTop=drag.top-dy;
