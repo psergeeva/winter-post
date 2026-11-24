@@ -187,18 +187,33 @@ function render(focus=false){
  maps();
  if(focus){panel.scrollTop=0;panel.querySelector('h2')?.focus({preventScroll:true});if(view!=='map')panel.scrollIntoView({block:'nearest'});}
 }
-if(typeof speechSynthesis!=='undefined'&&typeof SpeechSynthesisUtterance!=='undefined'){
- $('readIntro').hidden=false;
- $('readIntro').onclick=()=>{
-  speechSynthesis.cancel();
-  const words=new SpeechSynthesisUtterance($('elf-story').textContent);
-  words.lang='ru-RU';
-  words.rate=.9;
-  speechSynthesis.speak(words);
- };
+const introAudio=new Audio('elf-intro.wav');
+introAudio.preload='none';
+const readIntro=$('readIntro');
+const introStatus=document.createElement('p');
+introStatus.setAttribute('role','status');
+readIntro.parentElement.after(introStatus);
+readIntro.hidden=false;
+function resetIntroLabel(){readIntro.textContent='Послушать эльфа';}
+function stopIntro(){
+ introAudio.pause();
+ introAudio.currentTime=0;
+ resetIntroLabel();
 }
+introAudio.addEventListener('ended',resetIntroLabel);
+readIntro.onclick=async()=>{
+ introStatus.textContent='';
+ if(!introAudio.paused){stopIntro();return;}
+ try{
+  await introAudio.play();
+  if(!introAudio.paused)readIntro.textContent='Остановить озвучку';
+ }catch{
+  resetIntroLabel();
+  introStatus.textContent='Озвучка не загрузилась. Попробуй ещё раз.';
+ }
+};
 function enterCity(){
- if(typeof speechSynthesis!=='undefined')speechSynthesis.cancel();
+ stopIntro();
  if ($('enter').disabled) return;
  $('enter').disabled=true;$('portal').classList.add('dive');
  setTimeout(()=>{showGame();begin();},matchMedia('(prefers-reduced-motion: reduce)').matches?25:3360);
