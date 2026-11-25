@@ -143,13 +143,19 @@ function homePost(){
 function puzzleShield(){
  return `<div class="shield" id="shield" style="background:${shieldColor}" aria-label="Герб с тремя подковами">${shieldIcon}<br>∪∪∪</div><div class="row">${[['#a93336','Красный'],['#28538b','Синий'],['#285845','Зелёный']].map(([v,n])=>`<button class="ghost" data-color="${v}" aria-pressed="${v===shieldColor}">${n}</button>`).join('')}${['★','⚔','♞'].map(v=>`<button class="ghost" data-symbol="${v}" aria-pressed="${v===shieldIcon}" aria-label="${{'★':'Звезда','⚔':'Мечи','♞':'Конь'}[v]}">${v}</button>`).join('')}</div>`;
 }
+const taskArt={16:['theater','Ангелина на сцене зимнего театра'],19:['ball','Ангелина и принцесса придумывают меню для бала']};
+function taskPicture(day){
+ const art=taskArt[day];
+ if(!art)return '';
+ return '<img class="task-scene" loading="lazy" src="scenes/'+art[0]+'.jpg" width="520" height="520" alt="'+art[1]+'">';
+}
 function letterPanel(){
  const l=letters[selected-1],found=state.found[selected],done=state.done[selected];
  const isGreen=l.type==='g';
  const choices=[l,...[-2,3].map(n=>letters[(selected-1+n+letters.length)%letters.length])];
  choices.push(...choices.splice(0,selected%3));
  panel.innerHTML=`<div class="date-envelope" role="img" aria-label="${selected} декабря"><svg viewBox="0 0 86 56" aria-hidden="true" focusable="false"><rect x="2" y="2" width="82" height="52" rx="7" fill="#b33743" stroke="#ffe6a5" stroke-width="2"/><path d="M4 50L42 24 82 50" fill="none" stroke="#e98578" stroke-width="2"/><path d="M4 6L39 35Q43 39 47 35L82 6" fill="#205742" stroke="#ffda80" stroke-width="2" stroke-linejoin="round"/><circle cx="43" cy="35" r="13" fill="#ffe29b" stroke="#9d472e" stroke-width="1.5"/></svg><span aria-hidden="true">${selected}</span></div><p class="letter-text">${escape(l.story)}</p>${original(l.type+l.stamp)}
- ${found?`<div class="task"><h3>${locations[l.person][0]}</h3><p>${travelTasks[selected-21]?'<strong>Задание в поездке.</strong> ':''}${escape(travelTasks[selected-21]??l.task)}</p>${tip&&l.hint?`<p><strong>Подсказка.</strong> ${escape(l.hint)}</p>`:''}${l.person==='knight'&&!done?puzzleShield():''}${!isGreen&&!done?`<details ${state.notes[selected]?'open':''}><summary>Записать свою идею</summary><label for="note">Заметка к письму</label><textarea id="note">${escape(state.notes[selected])}</textarea></details>`:''}</div>`:'<p>Кто написал письмо? Найди персонажа на карте.</p>'}
+ ${found?`<div class="task">${taskPicture(selected)}<h3>${locations[l.person][0]}</h3><p>${travelTasks[selected-21]?'<strong>Задание в поездке.</strong> ':''}${escape(travelTasks[selected-21]??l.task)}</p>${tip&&l.hint?`<p><strong>Подсказка.</strong> ${escape(l.hint)}</p>`:''}${l.person==='knight'&&!done?puzzleShield():''}${!isGreen&&!done?`<details ${state.notes[selected]?'open':''}><summary>Записать свою идею</summary><label for="note">Заметка к письму</label><textarea id="note">${escape(state.notes[selected])}</textarea></details>`:''}</div>`:'<p>Кто написал письмо? Найди персонажа на карте.</p>'}
  ${tip&&!found?`<p><strong>Подсказка.</strong> ${escape(locations[l.person][3])}</p>`:''}
  ${done?`<p class="skin">${giftSticker(l)}</p><p>Подарок доставлен.</p>`:found?chosen?`<p>В посылке ${l.icon} ${l.gift.toLowerCase()}. Нажми на персонажа ещё раз, чтобы вручить подарок.</p><button id="deliver" class="delivery-shortcut">Вручить подарок</button>`:`<h3>Что положить в посылку?</h3><div class="row rack">${choices.map(v=>`<button class="choice" data-gift="${v.person}">${giftSticker(v)}${v.gift}</button>`).join('')}</div>`:''}
  <div class="row">${!found?'<button id="find">Искать на карте</button>':''}${!done&&(!found||isGreen)?'<button class="ghost" id="hint">Подсказка</button>':''}</div>${status()}`;
@@ -185,7 +191,7 @@ function finale(){
 }
 function deliveryPanel(){
  const praise=['Ты большая молодец! Возьми свой подарочек.','Отличная работа, почтальон! Теперь твоя очередь получить подарочек.','Сегодняшнее задание выполнено! Забирай свой подарочек.','Ура, ты справилась! Тебя ждёт подарочек.'];
- panel.innerHTML='<h2 tabindex="-1">Посылка доставлена!</h2><p class="skin">'+giftSticker(letters[selected-1])+'</p><p>'+praise[(selected-1)%praise.length]+'</p><button id="returnPost">В почтовый ящик</button>';
+ panel.innerHTML='<h2 tabindex="-1">Посылка доставлена!</h2><img class="gift-scene" src="scenes/gift.jpg" width="520" height="520" alt="Эльф Тим вручает Ангелине подарок у зимней почты"><p class="skin">'+giftSticker(letters[selected-1])+'</p><p>'+praise[(selected-1)%praise.length]+'</p><button id="returnPost">В почтовый ящик</button>';
  $('returnPost').onclick=()=>openLetter(0);
 }
 function render(focus=false,record=true){
@@ -245,12 +251,35 @@ readIntro.onclick=async()=>{
  }
 };
 
+const introScenes=[
+ ['intro-desk','Ангелина рассматривает карту при свете лампы.','Всё началось с карты, которую Ангелина разложила на столе.'],
+ ['intro-magic','В огнях оживающей карты видны ёлка и почта.','Вдруг на карте зажглись окна, а вокруг ёлки закружился снег.'],
+ ['intro-post','Ангелина идёт к освещённому зданию почты.','Ещё шаг, и вот она уже у дверей зимней почты!']
+];
+let introFrame=0;
+function showStoryFrame(){
+ const [file,alt,caption]=introScenes[introFrame];
+ const image=$('story-image');
+ image.src='scenes/'+file+'.jpg';
+ image.alt=alt;
+ $('story-caption').textContent=caption;
+ $('story-next').textContent=introFrame===introScenes.length-1?'В почту':'Дальше';
+}
+function finishStory(){
+ $('arrival-story').hidden=true;
+ showGame();begin();
+}
+$('story-next').onclick=()=>{
+ if(introFrame+1===introScenes.length){finishStory();return;}
+ introFrame++;showStoryFrame();
+};
+$('story-skip').onclick=finishStory;
 function enterCity(){
  stopIntro();
 
  if ($('enter').disabled) return;
  $('enter').disabled=true;$('portal').classList.add('dive');
- setTimeout(()=>{showGame();begin();},matchMedia('(prefers-reduced-motion: reduce)').matches?25:3360);
+ setTimeout(()=>{introFrame=0;showStoryFrame();$('home').hidden=true;$('arrival-story').hidden=false;$('story-next').focus({preventScroll:true});},matchMedia('(prefers-reduced-motion: reduce)').matches?25:3360);
 }
 $('enter').onclick=enterCity;
 $('portalEntry').onclick=enterCity;
@@ -315,5 +344,6 @@ frame.addEventListener('click',e=>{if(moved&&e.detail){e.stopImmediatePropagatio
  console.error(err);
  document.getElementById('enter').disabled=true;
  document.getElementById('portalEntry').disabled=true;
+ document.getElementById('loading').hidden=false;
  document.getElementById('loading').textContent='Карта и письма не загрузились. Обнови страницу, чтобы повторить.';
 });
