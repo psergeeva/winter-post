@@ -151,14 +151,15 @@ function taskPicture(day){
 }
 function letterPanel(){
  const l=letters[selected-1],found=state.found[selected],done=state.done[selected];
+ const letter=`<p class="letter-text">${escape(l.story)}</p>${original(l.type+l.stamp)}`;
  const isGreen=l.type==='g';
  const choices=[l,...[-2,3].map(n=>letters[(selected-1+n+letters.length)%letters.length])];
  choices.push(...choices.splice(0,selected%3));
- panel.innerHTML=`<div class="date-envelope" role="img" aria-label="${selected} декабря"><svg viewBox="0 0 86 56" aria-hidden="true" focusable="false"><rect x="2" y="2" width="82" height="52" rx="7" fill="#b33743" stroke="#ffe6a5" stroke-width="2"/><path d="M4 50L42 24 82 50" fill="none" stroke="#e98578" stroke-width="2"/><path d="M4 6L39 35Q43 39 47 35L82 6" fill="#205742" stroke="#ffda80" stroke-width="2" stroke-linejoin="round"/><circle cx="43" cy="35" r="13" fill="#ffe29b" stroke="#9d472e" stroke-width="1.5"/></svg><span aria-hidden="true">${selected}</span></div><p class="letter-text">${escape(l.story)}</p>${original(l.type+l.stamp)}
+ panel.innerHTML=`<div class="date-envelope" role="img" aria-label="${selected} декабря"><svg viewBox="0 0 86 56" aria-hidden="true" focusable="false"><rect x="2" y="2" width="82" height="52" rx="7" fill="#b33743" stroke="#ffe6a5" stroke-width="2"/><path d="M4 50L42 24 82 50" fill="none" stroke="#e98578" stroke-width="2"/><path d="M4 6L39 35Q43 39 47 35L82 6" fill="#205742" stroke="#ffda80" stroke-width="2" stroke-linejoin="round"/><circle cx="43" cy="35" r="13" fill="#ffe29b" stroke="#9d472e" stroke-width="1.5"/></svg><span aria-hidden="true">${selected}</span></div>${found?"":letter}
  ${found?`<div class="task">${taskPicture(selected)}<h3>${locations[l.person][0]}</h3><p>${travelTasks[selected-21]?'<strong>Задание в поездке.</strong> ':''}${escape(travelTasks[selected-21]??l.task)}</p>${tip&&l.hint?`<p><strong>Подсказка.</strong> ${escape(l.hint)}</p>`:''}${l.person==='knight'&&!done?puzzleShield():''}${!isGreen&&!done?`<details ${state.notes[selected]?'open':''}><summary>Записать свою идею</summary><label for="note">Заметка к письму</label><textarea id="note">${escape(state.notes[selected])}</textarea></details>`:''}</div>`:'<p>Кто написал письмо? Найди персонажа на карте.</p>'}
  ${tip&&!found?`<p><strong>Подсказка.</strong> ${escape(locations[l.person][3])}</p>`:''}
  ${done?`<p class="skin">${giftSticker(l)}</p><p>Подарок доставлен.</p>`:found?chosen?`<p>В посылке ${l.icon} ${l.gift.toLowerCase()}. Нажми на персонажа ещё раз, чтобы вручить подарок.</p><button id="deliver" class="delivery-shortcut">Вручить подарок</button>`:`<h3>Что положить в посылку?</h3><div class="row rack">${choices.map(v=>`<button class="choice" data-gift="${v.person}">${giftSticker(v)}${v.gift}</button>`).join('')}</div>`:''}
- <div class="row">${!found?'<button id="find">Искать на карте</button>':''}${!done&&(!found||isGreen)?'<button class="ghost" id="hint">Подсказка</button>':''}</div>${status()}`;
+ <div class="row">${!found?'<button id="find">Искать на карте</button>':''}${!done&&(!found||isGreen)?'<button class="ghost" id="hint">Подсказка</button>':''}</div>${status()}${found?letter:""}`;
 
  if($('find'))$('find').onclick=()=>{switchView('map');$('mapframe').focus({preventScroll:true});};
  if($('hint'))$('hint').onclick=()=>{tip=!tip;if(tip&&!found){view='map';message='';render();mapFocus();}else render();};
