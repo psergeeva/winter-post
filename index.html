@@ -26,6 +26,22 @@ body:not([data-screen=map]) .wrap{max-width:700px;margin-inline:auto}
 body[data-screen=map]{overflow:hidden}
 body[data-screen=map] .wrap{position:fixed;top:0;left:100dvw;width:100dvh;height:100dvw;max-width:none;margin:0;padding:0;transform:rotate(90deg);transform-origin:top left;overflow:visible}
 }
+
+@media (pointer:coarse) and (orientation:landscape) and (max-height:650px){
+  body:not([data-screen=map]){overflow:hidden}
+  body:not([data-screen=map]) .wrap{
+    position:fixed;inset:100dvh auto auto 0;
+    width:100dvh;height:100dvw;max-width:none;margin:0;
+    padding:0;transform:rotate(-90deg);transform-origin:top left;
+    overflow:visible;
+  }
+  #home.home{
+    height:100%;min-height:0;padding:12px;overflow:auto;
+    grid-template-rows:auto auto auto;align-content:start;
+  }
+  #home.home h1{font-size:clamp(20px,7dvh,50px)}
+  body[data-screen=post] #game{height:100%;overflow:auto;padding:8px}
+}
 </style></head><body><main class="wrap">
 <section id="home" class="home"><div class="snow" aria-hidden="true"></div><h1>Почта зимнего города</h1><div class="intro-copy"><div class="elf-intro"><span class="elf-avatar" aria-hidden="true">🧝🏻</span><div><p class="elf-name">Эльф Тим, помощник почтальона</p><p id="elf-story">Привет, Ангелина! До Нового года осталось столько писем, что я один не справлюсь. Открывай конверты, ищи отправителей на карте и доставляй им подарки. Готова? Почта ждёт!</p></div></div><div class="row"><button id="enter" disabled>Нырнуть в карту</button><button id="readIntro" class="ghost" hidden>Послушать эльфа</button><p id="loading" role="status">Загружаются карта и письма…</p></div></div><div id="portal" class="portal"><img data-game-map alt="Иллюстрированная карта сказочной страны"><button id="portalEntry" disabled class="portal-entry" aria-label="Нырнуть в карту через почту">✉</button><div class="swirl" aria-hidden="true">✦ ✉ ✧</div></div></section>
 <section id="arrival-story" class="scene-story" hidden aria-label="Путешествие в сказочный город">
@@ -36,4 +52,4 @@ body[data-screen=map] .wrap{position:fixed;top:0;left:100dvw;width:100dvh;height
 </section><div id="game" hidden><header class="bar"><strong><button id="start-link" type="button">Почта зимнего города</button></strong><nav aria-label="Разделы игры"><button class="ghost" data-view="post">Почта</button><button class="ghost" data-view="map">Карта</button></nav></header>
 
 <div id="play" class="layout" hidden><section id="panel" tabindex="-1" class="paper" aria-label="Почта"></section><aside class="mapSide" id="mapSide"><div class="mapframe" id="mapframe" tabindex="0" aria-label="Прокручиваемая карта"><div class="map" id="map"><img data-game-map alt="Сказочное королевство: замок слева, площадь в центре, море справа" draggable="false"><div id="points"></div><div id="stickers"></div></div></div><p id="mapStatus" class="map-status" role="status"></p></aside></div>
-</div></main><script src="app.js?v=portrait-map" defer></script></body></html>
+</div></main><script src="app.js?v=rotate-delivery" defer></script></body></html>
