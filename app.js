@@ -199,9 +199,15 @@ function finale(){
   render();
  };
 }
+const deliveryScenes=[
+ ['gift','Эльф Тим вручает Ангелине подарок у зимней почты'],
+ ['intro-post','Ангелина у освещённой зимней почты'],
+ ['intro-magic','Ёлка и почта в огнях волшебной карты']
+];
 function deliveryPanel(){
+ const [scene,description]=deliveryScenes[(selected-1)%deliveryScenes.length];
  const praise=['Ты большая молодец! Возьми свой подарочек.','Отличная работа, почтальон! Теперь твоя очередь получить подарочек.','Сегодняшнее задание выполнено! Забирай свой подарочек.','Ура, ты справилась! Тебя ждёт подарочек.'];
- panel.innerHTML='<h2 tabindex="-1">Посылка доставлена!</h2><img class="gift-scene" src="scenes/gift.jpg" width="520" height="520" alt="Эльф Тим вручает Ангелине подарок у зимней почты"><p class="skin">'+giftSticker(letters[selected-1])+'</p><p>'+praise[(selected-1)%praise.length]+'</p><button id="returnPost">В почтовый ящик</button>';
+ panel.innerHTML='<h2 tabindex="-1">Посылка доставлена!</h2><img class="gift-scene" src="scenes/'+scene+'.jpg" width="520" height="520" alt="'+description+'"><p class="skin">'+giftSticker(letters[selected-1])+'</p><p>'+praise[(selected-1)%praise.length]+'</p><button id="returnPost">В почтовый ящик</button>';
  $('returnPost').onclick=()=>openLetter(0);
 }
 function render(focus=false,record=true){
